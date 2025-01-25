@@ -1,3 +1,5 @@
+use std::io;
+
 use rand::Rng;
 
 #[derive(PartialEq)]
@@ -154,7 +156,7 @@ fn mcst(p1: u64, p2: u64) -> (f64, (u64, u64)) {
         nb_visit: 0,
         status: get_status(p1, p2),
     });
-    for _ in 0..100_000 {
+    for _ in 0..10_000 {
         let node = selection(root, &mut graph);
         let score = simulation(graph[node].state.0, graph[node].state.1);
         backpropagation(node, &mut graph, score);
@@ -179,11 +181,52 @@ fn main() {
     let mut p1 = 0;
     let mut p2 = 0;
     let mut score = 0.0;
-    //(score, (p1, p2)) = mcst(p1, p2);
-    //println!("{score}");
+    let player_turn = 0;
+    let mut turn = 0;
     while !is_winning(p2) && p1 | p2 != FULL_GRID {
-        (score, (p1, p2)) = mcst(p1, p2);
-        println!("{score}");
-        show_grid(p1, p2);
+        if turn % 2 == player_turn {
+            // player turn
+            (p1, p2) = get_user_move(p1, p2);
+            show_grid(p1, p2);
+        } else {
+            // bot turn
+            (score, (p1, p2)) = mcst(p1, p2);
+            println!("{score}");
+            show_grid(p1, p2);
+        }
+        turn += 1;
     }
+    println!("finished")
+}
+
+fn get_user_move(p1: u64, p2: u64) -> (u64, u64) {
+    let mut m = (10, 10);
+    let mut is_first = true;
+    while m == (10, 10) {
+        let mut input = String::new();
+        if is_first {
+            println!("entrez un coup (le x et le y séparer par un espace)");
+        } else {
+            println!("coup entré invalide");
+        }
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+        let values = input
+            .replace("\n", "")
+            .split(" ")
+            .filter(|&x| x != " ")
+            .map(|x| x.parse::<u64>().unwrap_or(10))
+            .collect::<Vec<u64>>();
+        if values.len() == 2
+            && values[0] != 10
+            && values[1] != 10
+            && 1 << (values[1] * 8 + values[0]) & (p1 | p2) == 0
+        {
+            m.0 = values[0];
+            m.1 = values[1];
+        }
+        is_first = false;
+    }
+    (p2, p1 | 1 << (m.1 * 8 + m.0))
 }
