@@ -12,6 +12,7 @@ enum STATUS {
 
 const FULL_GRID: u64 = 0b11111110111111101111111011111110111111101111111;
 const UCTC: f64 = 2.0;
+const TIME_PER_MOVE: u128 = 1000; // milliseconds
 
 fn show_grid(p1: u64, p2: u64) {
     for y in (0..6).rev() {
@@ -145,9 +146,9 @@ fn backpropagation(node: usize, graph: &mut Vec<Node>, score: u64) {
     }
 }
 
-fn mcst(mut graph: Vec<Node>, root: usize) -> (f64, (u64, u64), Vec<Node>, usize) {
+fn mcst(mut graph: Vec<Node>, root: usize, time: u128) -> (f64, (u64, u64), Vec<Node>, usize) {
     let now = Instant::now();
-    while now.elapsed().as_millis() < 1000 {
+    while now.elapsed().as_millis() < TIME_PER_MOVE {
         let node = selection(root, &mut graph);
         let score = simulation(graph[node].state.0, graph[node].state.1);
         backpropagation(node, &mut graph, score);
@@ -213,18 +214,11 @@ fn main() {
             }
         } else {
             // bot turn
-            let now = Instant::now();
             let previous_state = (p1, p2);
-            println!("{root}");
-            (score, (p1, p2), graph, root) = mcst(graph, root);
-            println!("{root}");
-            println!(
-                "Running slow_function() took {} milli seconds.",
-                now.elapsed().as_millis()
-            );
-            println!("{score}");
+            (score, (p1, p2), graph, root) = mcst(graph, root, TIME_PER_MOVE);
             show_grid(p1, p2);
             println!("I played {}", to_user_move(previous_state, (p1, p2)));
+            println!("evaluation: {score}");
         }
         turn += 1;
     }
