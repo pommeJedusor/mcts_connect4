@@ -145,37 +145,46 @@ fn backpropagation(node: usize, graph: &mut Vec<Node>, score: u64) {
     }
 }
 
-fn mcst(p1: u64, p2: u64) -> (f64, (u64, u64)) {
-    let mut graph: Vec<Node> = vec![];
-    let root = 0;
-    graph.push(Node {
-        state: (p1, p2),
-        children: vec![],
-        parent: None,
-        score: 0,
-        nb_visit: 0,
-        status: get_status(p1, p2),
-    });
+fn mcst(mut graph: Vec<Node>, root: usize) -> (f64, (u64, u64), Vec<Node>, usize) {
     let now = Instant::now();
     while now.elapsed().as_millis() < 1000 {
         let node = selection(root, &mut graph);
         let score = simulation(graph[node].state.0, graph[node].state.1);
         backpropagation(node, &mut graph, score);
     }
-    let tests = graph[0]
-        .children
-        .iter()
-        .map(|x| (graph[*x].score as u64, graph[*x].nb_visit, graph[*x].state));
+    let tests = graph[root].children.iter().map(|x| {
+        (
+            graph[*x].score as u64,
+            graph[*x].nb_visit,
+            graph[*x].state,
+            *x,
+        )
+    });
     let mut best_score = None;
     let mut best = None;
-    for (score, nb_visit, state) in tests {
+    let mut best_x = None;
+    for (score, nb_visit, state, x) in tests {
         let value = score as f64 / nb_visit as f64;
         if best_score == None || value > best_score.unwrap() {
             best_score = Some(value);
-            best = Some(state)
+            best = Some(state);
+            best_x = Some(x);
         }
     }
-    (best_score.unwrap(), best.unwrap())
+    (best_score.unwrap(), best.unwrap(), graph, best_x.unwrap())
+}
+
+fn init_graph() -> Vec<Node> {
+    let mut graph: Vec<Node> = vec![];
+    graph.push(Node {
+        state: (0, 0),
+        children: vec![],
+        parent: None,
+        score: 0,
+        nb_visit: 0,
+        status: get_status(0, 0),
+    });
+    graph
 }
 
 fn main() {
@@ -184,16 +193,31 @@ fn main() {
     let mut score = 0.0;
     let player_turn = get_player_turn();
     let mut turn = 0;
+    let mut graph = init_graph();
+    let mut root = 0;
     while !is_winning(p2) && p1 | p2 != FULL_GRID {
         if turn % 2 == player_turn {
             // player turn
             (p1, p2) = get_user_move(p1, p2);
             show_grid(p1, p2);
+            // update graph
+            let previous_root = root;
+            for child in graph[root].children.clone() {
+                if graph[child].state == (p1, p2) {
+                    root = child;
+                    break;
+                }
+            }
+            if previous_root == root {
+                graph[root].state = (p1, p2);
+            }
         } else {
             // bot turn
             let now = Instant::now();
             let previous_state = (p1, p2);
-            (score, (p1, p2)) = mcst(p1, p2);
+            println!("{root}");
+            (score, (p1, p2), graph, root) = mcst(graph, root);
+            println!("{root}");
             println!(
                 "Running slow_function() took {} milli seconds.",
                 now.elapsed().as_millis()
