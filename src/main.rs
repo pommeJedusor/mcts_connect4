@@ -156,7 +156,7 @@ fn mcst(p1: u64, p2: u64) -> (f64, (u64, u64)) {
         nb_visit: 0,
         status: get_status(p1, p2),
     });
-    for _ in 0..10_000 {
+    for _ in 0..100_000 {
         let node = selection(root, &mut graph);
         let score = simulation(graph[node].state.0, graph[node].state.1);
         backpropagation(node, &mut graph, score);
@@ -181,7 +181,7 @@ fn main() {
     let mut p1 = 0;
     let mut p2 = 0;
     let mut score = 0.0;
-    let player_turn = 0;
+    let player_turn = get_player_turn();
     let mut turn = 0;
     while !is_winning(p2) && p1 | p2 != FULL_GRID {
         if turn % 2 == player_turn {
@@ -199,10 +199,21 @@ fn main() {
     println!("finished")
 }
 
+fn get_player_turn() -> i32 {
+    println!("do you want to start y/n");
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+    if input == "y\n".to_string() || input == "Y\n".to_string() {
+        return 0;
+    }
+    1
+}
+
 fn get_user_move(p1: u64, p2: u64) -> (u64, u64) {
-    let mut m = (10, 10);
     let mut is_first = true;
-    while m == (10, 10) {
+    loop {
         let mut input = String::new();
         if is_first {
             println!("entrez un coup (le x et le y séparer par un espace)");
@@ -212,21 +223,16 @@ fn get_user_move(p1: u64, p2: u64) -> (u64, u64) {
         io::stdin()
             .read_line(&mut input)
             .expect("Failed to read line");
-        let values = input
-            .replace("\n", "")
-            .split(" ")
-            .filter(|&x| x != " ")
-            .map(|x| x.parse::<u64>().unwrap_or(10))
-            .collect::<Vec<u64>>();
-        if values.len() == 2
-            && values[0] != 10
-            && values[1] != 10
-            && 1 << (values[1] * 8 + values[0]) & (p1 | p2) == 0
-        {
-            m.0 = values[0];
-            m.1 = values[1];
+        let value = input.replace("\n", "").trim().parse::<i32>().unwrap_or(10);
+        if value < 1 || value > 7 {
+            continue;
+        }
+        for y in 0..6 {
+            let i = y * 8 + value - 1;
+            if 1 << i & (p1 | p2) == 0 {
+                return (p2, p1 | 1 << i);
+            }
         }
         is_first = false;
     }
-    (p2, p1 | 1 << (m.1 * 8 + m.0))
 }
