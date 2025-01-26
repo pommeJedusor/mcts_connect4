@@ -261,7 +261,7 @@ fn get_user_move(p1: u64, p2: u64) -> (u64, u64) {
     loop {
         let mut input = String::new();
         if is_first {
-            println!("entrez un coup (le x et le y séparer par un espace)");
+            println!("entrez un coup (le x 1 -> 7 inclus)");
         } else {
             println!("coup entré invalide");
         }
