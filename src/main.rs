@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, time::Instant};
 
 use rand::Rng;
 
@@ -156,7 +156,8 @@ fn mcst(p1: u64, p2: u64) -> (f64, (u64, u64)) {
         nb_visit: 0,
         status: get_status(p1, p2),
     });
-    for _ in 0..100_000 {
+    let now = Instant::now();
+    while now.elapsed().as_millis() < 1000 {
         let node = selection(root, &mut graph);
         let score = simulation(graph[node].state.0, graph[node].state.1);
         backpropagation(node, &mut graph, score);
@@ -190,7 +191,12 @@ fn main() {
             show_grid(p1, p2);
         } else {
             // bot turn
+            let now = Instant::now();
             (score, (p1, p2)) = mcst(p1, p2);
+            println!(
+                "Running slow_function() took {} milli seconds.",
+                now.elapsed().as_millis()
+            );
             println!("{score}");
             show_grid(p1, p2);
         }
