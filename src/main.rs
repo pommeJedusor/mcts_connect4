@@ -192,6 +192,7 @@ fn main() {
         } else {
             // bot turn
             let now = Instant::now();
+            let previous_state = (p1, p2);
             (score, (p1, p2)) = mcst(p1, p2);
             println!(
                 "Running slow_function() took {} milli seconds.",
@@ -199,10 +200,24 @@ fn main() {
             );
             println!("{score}");
             show_grid(p1, p2);
+            println!("I played {}", to_user_move(previous_state, (p1, p2)));
         }
         turn += 1;
     }
     println!("finished")
+}
+
+fn to_user_move(previous_state: (u64, u64), new_state: (u64, u64)) -> u32 {
+    let m = previous_state.0 ^ new_state.1;
+    for y in 0..6 {
+        for x in 0..7 {
+            let i = y * 8 + x;
+            if 1 << i == m {
+                return x + 1;
+            }
+        }
+    }
+    unreachable!();
 }
 
 fn get_player_turn() -> i32 {
